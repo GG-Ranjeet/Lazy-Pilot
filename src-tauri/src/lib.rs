@@ -31,6 +31,22 @@ fn get_and_set_gateway(state: tauri::State<'_, AppState>) -> Result<String, Stri
 }
 
 #[tauri::command]
+fn get_devices() -> Result<String, String> {
+    let output = Command::new("adb")
+        .args(["devices"])
+        .output()
+        .expect("Failed to execute command");
+
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+        Ok(stdout)
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+        Err(format!("Error: {}", stderr))
+    }
+}
+
+#[tauri::command]
 fn set_port() -> Result<String, String> {
     let output = Command::new("adb")
         .args(["tcpip", "5555"])
@@ -43,6 +59,25 @@ fn set_port() -> Result<String, String> {
     } else {
         // let stderr = String::from_utf8_lossy(&output.stderr).to_string();
         Err("Error".to_string())
+    }
+}
+
+#[tauri::command]
+fn connect_adb(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let gateway = state.gateway.lock().unwrap();
+    let device_address = format!("{}:5555", *gateway);
+
+    let output = Command::new("adb")
+        .args(["connect", &device_address])
+        .output()
+        .expect("Failed to execute command");
+
+    if output.status.success() {
+        println!("ADB connected to {}", device_address);
+        Ok(format!("Connected to {}", device_address))
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+        Err(format!("Error: {}", stderr))
     }
 }
 
@@ -157,7 +192,9 @@ pub fn run() {
             press_home_button,
             press_power_button,
             enter_pin,
+            get_devices,
             set_port,
+            connect_adb,
             get_and_set_gateway,
             start_mirror
         ])
