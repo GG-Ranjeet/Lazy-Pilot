@@ -4,15 +4,19 @@ function UtilButton() {
   var gateway: string = "";
 
     function goHome() {
-        invoke("press_home_button", { gateway: gateway });
+        invoke("press_home_button");
     }
     function powerButton() {
-        invoke("press_power_button", { gateway: gateway });
+        invoke("press_power_button");
     }
     async function gatewayButton() {
-        const output: string = await invoke("get_gateway");
+        const output: string = await invoke("get_and_set_gateway");
         gateway = output;
         console.log("Default Gateway:", output);
+    }
+    async function startMirror() {
+        const message: string = await invoke("start_mirror");
+        console.log("Mirror Started, Output:", message);
     }
   return (
     <div>
@@ -33,6 +37,12 @@ function UtilButton() {
           onClick={()=>gatewayButton()}
         >
           Get Gateway
+        </button>
+        <button
+          className="my-button"
+          onClick={()=>startMirror()}
+        >
+          Start Mirror
         </button>
     </div>
   );

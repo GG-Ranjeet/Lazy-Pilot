@@ -1,26 +1,14 @@
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 use std::process::Command;
-use std::os::windows::process::CommandExt;
+use std::{os::windows::process::CommandExt, sync::Mutex};
 use tauri_plugin_shell::ShellExt;
 
-// pub fn run() {
-//   tauri::Builder::default()
-//     .setup(|app| {
-//       if cfg!(debug_assertions) {
-//         app.handle().plugin(
-//           tauri_plugin_log::Builder::default()
-//             .level(log::LevelFilter::Info)
-//             .build(),
-//         )?;
-//       }
-//       Ok(())
-//     })
-//     .run(tauri::generate_context!())
-//     .expect("error while running tauri application");
-// }
+struct AppState {
+    gateway: Mutex<String>,
+}
 
 #[tauri::command]
-fn get_gateway() -> Result<String, String> {
+fn get_and_set_gateway(state: tauri::State<'_, AppState>) -> Result<String, String> {
     let script = "(Get-NetRoute -DestinationPrefix 0.0.0.0/0).NextHop";
 
     let output = Command::new("powershell")
@@ -33,6 +21,8 @@ fn get_gateway() -> Result<String, String> {
     if output.status.success() {  
         let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
         let myoutput: String = stdout.lines().collect::<Vec<&str>>()[0].to_string(); // Could be buggy if there are no lines, but it works for now
+        let mut gateway_lock = state.gateway.lock().unwrap();
+        *gateway_lock = myoutput.clone();
         Ok(myoutput)
     } else {
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
@@ -66,11 +56,11 @@ fn set_port() -> Result<String, String> {
 //         .args(["connect", "192.0.0.2:5555"])
 
 #[tauri::command]
-fn press_home_button() -> String {
+fn press_home_button(state: tauri::State<'_, AppState>) -> String {
     println!("Home button pressed in Rust!");
 
     let output = Command::new("adb")
-        .args(["-s", "192.0.0.2:5555", "shell", "input", "keyevent", "3"])
+        .args(["-s", &format!("{}:5555", state.gateway.lock().unwrap()), "shell", "input", "keyevent", "3"])
         .output();
 
     match output {
@@ -78,27 +68,31 @@ fn press_home_button() -> String {
         Err(e) => format!("Error: {}", e),
     }
 }
-// #[tauri::command]
+
 #[tauri::command]
-fn press_power_button() -> String {
-    println!("Power button pressed in Rust!");
+fn press_power_button(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let gateway = state.gateway.lock().unwrap();
+    let device_address = format!("{}:5555", *gateway);
 
-    // Using the IP that worked in your CMD
-    let output = Command::new("adb")
-        .args(["-s", "192.0.0.2:5555", "shell", "input", "keyevent", "26"])
-        .output();
+    let output = std::process::Command::new("adb")
+        .args(["-s", &device_address, "shell", "input", "keyevent", "26"])
+        .output()
+        .map_err(|e| format!("Failed to execute process: {}", e))?;
 
-    match output {
-        Ok(_) => "Success: Power button pressed".to_string(),
-        Err(e) => format!("Error: {}", e),
+    if output.status.success() {
+        Ok("Success: Power button pressed".to_string())
+    } else {
+        // This captures the ACTUAL error from ADB (e.g., "device not found")
+        let error_msg = String::from_utf8_lossy(&output.stderr);
+        Err(format!("ADB Error: {}", error_msg.trim()))
     }
 }
 
 #[tauri::command]
-fn enter_pin(pin: String) -> String {
+fn enter_pin(state: tauri::State<'_, AppState>, pin: String) -> String {
     let message = pin.replace(" ", "%s");
     let output = Command::new("adb")
-        .args(["-s", "192.0.0.2:5555", "shell", "input", "text", &message])
+        .args(["-s", &format!("{}:5555", state.gateway.lock().unwrap()), "shell", "input", "text", &message])
         .output();
     match output {
         Ok(_) => format!("Success: PIN entered {}", pin),
@@ -106,30 +100,30 @@ fn enter_pin(pin: String) -> String {
     }
 }
 
+// #[tauri::command]
+// fn launch_mirroring(state: tauri::State<'_, AppState>, handle: tauri::AppHandle) {
+//     let device_ip = &format!("{}:5555", state.gateway.lock().unwrap()); // Your wireless IP
+
+//     // This calls the 'scrcpy' sidecar we bundled
+//     let sidecar_command = handle.shell().sidecar("scrcpy").unwrap().args([
+//         "-s",
+//         device_ip,
+//         "--always-on-top",
+//         "--window-title",
+//         "Phone Pilot Mirror",
+//         "--stay-awake",
+//     ]);
+
+//     let (_rx, _child) = sidecar_command.spawn().expect("Failed to launch Scrcpy");
+// }
+
 #[tauri::command]
-fn launch_mirroring(handle: tauri::AppHandle) {
-    let device_ip = "192.0.0.2:5555"; // Your wireless IP
-
-    // This calls the 'scrcpy' sidecar we bundled
-    let sidecar_command = handle.shell().sidecar("scrcpy").unwrap().args([
-        "-s",
-        device_ip,
-        "--always-on-top",
-        "--window-title",
-        "Phone Pilot Mirror",
-        "--stay-awake",
-    ]);
-
-    let (_rx, _child) = sidecar_command.spawn().expect("Failed to launch Scrcpy");
-}
-
-#[tauri::command]
-fn start_mirror(app: tauri::AppHandle) {
-    let device_ip = "192.0.0.2:5555";
+fn start_mirror(state: tauri::State<'_, AppState>, app: tauri::AppHandle) {
+    let device_ip = &format!("{}:5555", state.gateway.lock().unwrap()); // Your wireless IP
 
     let (mut rx, _child) = app
         .shell()
-        .sidecar("binaries/scrcpy/scrcpy")
+        .sidecar("scrcpy")
         .unwrap()
         .args(["-s", device_ip, "--always-on-top"])
         .spawn()
@@ -155,14 +149,16 @@ fn start_mirror(app: tauri::AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        // Register your command HERE inside the run function
+        .manage(AppState {
+            gateway: Mutex::new("192.168.1.1:5555".to_string()),
+        })
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             press_home_button,
             press_power_button,
             enter_pin,
             set_port,
-            get_gateway,
+            get_and_set_gateway,
             start_mirror
         ])
         .run(tauri::generate_context!())
