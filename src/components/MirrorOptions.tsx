@@ -1,32 +1,88 @@
 import Toggle from "./Utils/Toggle";
+import { useEffect, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 
-export default function MirrorOptions() {
-
-
+export default function MirrorOptions({state}:any) {
+  const [mirrorConfig, setMirrorConfig] = useState({
+    alwaysOnTop: true,
+    audioForwarding: false,
+    videoEnabled: true,
+    showWindow: true,
+  });
+  async function startMirror() {
+    console.log(
+      "Starting mirror with gateway:",
+      state.config.gateway,
+      "and binary path:",
+      `${state.config.binary_path}//scrcpy.exe`,
+    );
+    const message: string = await invoke("start_mirror", {
+      customPath: `${state.config.binary_path}//scrcpy.exe`,
+    });
+    console.log("Mirror Started, Output:", message);
+  }
+  useEffect(() => {
+    console.log("Mirror Config Updated:", mirrorConfig);
+  });
   return (
     <div className="mirror-options flex flex-col items-center justify-center gap-4 p-4">
       <div>
         <div className="fieldset bg-base-100 border-base-300 gap-4 rounded-box w-64 border p-4">
           <div className="">
             <label className="label flex items-center gap-3 cursor-pointer">
-              <Toggle check_mark={true} default_check={false} handler={() => {}}/>
+              <Toggle
+                mark={true}
+                default_check={mirrorConfig.alwaysOnTop}
+                handler={(checked) =>
+                  setMirrorConfig({ ...mirrorConfig, alwaysOnTop: checked })
+                }
+              />
+              <span className="label-text">Always on top</span>
+            </label>
+          </div>
+          <div className="">
+            <label className="label flex items-center gap-3 cursor-pointer">
+              <Toggle
+                mark={true}
+                default_check={mirrorConfig.audioForwarding}
+                handler={(checked) =>
+                  setMirrorConfig({ ...mirrorConfig, audioForwarding: checked })
+                }
+              />
               <span className="label-text">Audio Forwarding</span>
             </label>
           </div>
           <div className="">
             <label className="label flex items-center gap-3 cursor-pointer">
-              <Toggle check_mark={true} default_check={true} handler={() => {}}/>
+              <Toggle
+                mark={true}
+                default_check={mirrorConfig.videoEnabled}
+                handler={(checked) =>
+                  setMirrorConfig({ ...mirrorConfig, videoEnabled: checked })
+                }
+              />
               <span className="label-text">Video</span>
             </label>
           </div>
           <div className="">
             <label className="label flex items-center gap-3 cursor-pointer">
-              <Toggle check_mark={true} default_check={true} handler={() => {}} />
+              <Toggle
+                mark={true}
+                default_check={mirrorConfig.showWindow}
+                handler={(checked) =>
+                  setMirrorConfig({ ...mirrorConfig, showWindow: checked })
+                }
+              />
               <span className="label-text">window</span>
             </label>
           </div>
         </div>
       </div>
+          <div>
+            <button className="my-button mt-4" onClick={() => startMirror()}>
+              Start Mirror
+            </button>
+          </div>
     </div>
   );
 }

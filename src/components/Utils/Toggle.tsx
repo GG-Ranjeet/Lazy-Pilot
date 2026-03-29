@@ -1,5 +1,5 @@
 interface ToggleProps {
-  check_mark: boolean;
+  mark: boolean;
   default_check?: boolean;
   handler?: (checked: boolean) => void;
 }
@@ -15,11 +15,11 @@ interface ToggleProps {
  * @returns void
  */
 export default function Toggle({
-  check_mark = false, 
+  mark = false, 
   default_check = false,
   handler = undefined,
 }: ToggleProps) {
-  if (!check_mark) {
+  if (!mark) {
     return (
       <div>
           <input

@@ -1,20 +1,11 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { FolderOpen } from "lucide-react";
-import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
-export function AdbControl() {
-  const [config, setConfig] = useState({
-    binary_path: "D:\\project\\tauri\\myTauriApp\\scrcpy",
-    gateway: null as string | null,
-  });
-
-  var gateway: string = "";
-
+export function AdbControl({state, }:any) {
   async function gatewayButton() {
     const output: string = await invoke("get_and_set_gateway");
-    gateway = output;
-    setConfig((prev) => ({ ...prev, gateway: output }));
+    state.setConfig((prev:any) => ({ ...prev, gateway: output }));
     console.log("Default Gateway:", output);
   }
   async function getDevices() {
@@ -27,12 +18,12 @@ export function AdbControl() {
   }
   async function connectAdb() {
     await invoke("connect_adb");
-    console.log("Attempting to connect ADB to", gateway);
+    console.log("Attempting to connect ADB to", state.config.gateway);
   }
 
   async function startMirror() {
-    console.log("Starting mirror with gateway:", config.gateway, "and binary path:", `${config.binary_path}//scrcpy.exe`);
-    const message: string = await invoke("start_mirror", { customPath: `${config.binary_path}//scrcpy.exe` });
+    console.log("Starting mirror with gateway:", state.config.gateway, "and binary path:", `${state.config.binary_path}//scrcpy.exe`);
+    const message: string = await invoke("start_mirror", { customPath: `${state.config.binary_path}//scrcpy.exe` });
     console.log("Mirror Started, Output:", message);
   }
   async function setPath() {
@@ -40,13 +31,13 @@ export function AdbControl() {
       const selected = await open({
         multiple: false,
         directory: true,
-        defaultPath: config.binary_path || undefined,
+        defaultPath: state.config.binary_path || undefined,
       });
       console.log("Selected path:", selected);
       if (selected && typeof selected == "string") {
-        setConfig((prev) => ({ ...prev, binary_path: selected }));
+        state.setConfig((prev:any) => ({ ...prev, binary_path: selected }));
         await invoke("set_binary_path", { path: selected });
-        console.log("Binary path set to:", config.binary_path);
+        console.log("Binary path set to:", state.config.binary_path);
       }
     } catch (error) {
       console.error("Error selecting path:", error);

@@ -5,8 +5,13 @@ import Header from "./components/Header";
 import Browser from "./components/Browser";
 import { AdbControl } from "./components/AdbControl";
 import MirrorOptions from "./components/MirrorOptions";
+import { useState } from "react";
 
 function App() {
+  const [config, setConfig] = useState({
+    binary_path: "D:\\project\\tauri\\myTauriApp\\scrcpy",
+    gateway: null as string | null,
+  });
   return (
     <div className="flex h-screen flex-col">
       <div className="flex flex-col" id="header">
@@ -21,12 +26,12 @@ function App() {
             <UtilButton />
           </div>
           <div className="flex-auto justify-center flex-col">
-            <AdbControl />
+            <AdbControl state={{ config, setConfig }} />
           </div>
         </div>
         <div className="flex flex-col justify-around items-center flex-1">
           <PinPad />
-          <MirrorOptions />
+          <MirrorOptions state={{ config, setConfig }} />
         </div>
       </div>
     </div>
