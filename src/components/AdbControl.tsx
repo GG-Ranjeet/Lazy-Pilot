@@ -1,4 +1,3 @@
-import { Command } from "@tauri-apps/plugin-shell";
 import { open } from "@tauri-apps/plugin-dialog";
 import { FolderOpen } from "lucide-react";
 import { useState } from "react";

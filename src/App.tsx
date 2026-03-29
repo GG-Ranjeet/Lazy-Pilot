@@ -4,6 +4,7 @@ import UtilButton from "./components/UtilButton";
 import Header from "./components/Header";
 import Browser from "./components/Browser";
 import { AdbControl } from "./components/AdbControl";
+import MirrorOptions from "./components/MirrorOptions";
 
 function App() {
   return (
@@ -23,8 +24,9 @@ function App() {
             <AdbControl />
           </div>
         </div>
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-col justify-around items-center flex-1">
           <PinPad />
+          <MirrorOptions />
         </div>
       </div>
     </div>
