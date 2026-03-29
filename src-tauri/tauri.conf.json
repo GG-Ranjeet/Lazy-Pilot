@@ -12,11 +12,17 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "mytauriapp",
-        "width": 800,
-        "height": 600,
+        "width": 1200,
+        "minWidth": 800,
+        "height": 720,
+        "minHeight": 500,
+        "center": true,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "transparent": false,
+        "decorations": true
       }
     ],
     "security": {

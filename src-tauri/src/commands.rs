@@ -1,7 +1,5 @@
 use std::process::Command;
 use std::{os::windows::process::CommandExt, sync::Mutex};
-use tauri::Manager;
-use tauri_plugin_shell::ShellExt;
 
 pub struct AppState {
     pub gateway: Mutex<String>,
@@ -20,7 +18,6 @@ fn get_binary_path(binary_name: &str, custom_path: Option<String>) -> String {
 #[tauri::command]
 pub fn set_binary_path(
     state: tauri::State<'_, AppState>,
-    binary_name: String,
     path: String,
 ) -> Result<(), String> {
     // Check if the provided path has adb and scrcpy
@@ -35,17 +32,13 @@ pub fn set_binary_path(
         ));
     }
 
-    match binary_name.as_str() {
-        "adb" => {
-            let mut adb = state.adb_path.lock().unwrap();
-            *adb = Some(path);
-        }
-        "scrcpy" => {
-            let mut scrcpy = state.scrcpy_path.lock().unwrap();
-            *scrcpy = Some(path);
-        }
-        _ => return Err("Invalid binary name".into()),
-    }
+  
+    let mut adb = state.adb_path.lock().unwrap();
+    *adb = Some(adb_path.to_str().unwrap().to_string()); // Store the adb path for later use
+
+    let mut scrcpy = state.scrcpy_path.lock().unwrap();
+    *scrcpy = Some(scrcpy_path.to_str().unwrap().to_string()); // Store the scrcpy path for later use
+
     Ok(())
 }
 
@@ -198,59 +191,27 @@ pub fn enter_pin(state: tauri::State<'_, AppState>, pin: String) -> String {
 }
 
 #[tauri::command]
-pub fn launch_mirroring(state: tauri::State<'_, AppState>, handle: tauri::AppHandle) {
-    let device_ip = &format!("{}:5555", state.gateway.lock().unwrap());
-
-    let sidecar_command = handle.shell().sidecar("scrcpy").unwrap().args([
-        "-s",
-        device_ip,
-        "--always-on-top",
-        "--window-title",
-        "Phone Pilot Mirror",
-        "--stay-awake",
-    ]);
-
-    let (_rx, _child) = sidecar_command.spawn().expect("Failed to launch Scrcpy");
-}
-// Required for path resolution
-
-#[tauri::command]
 pub async fn start_mirror(
     state: tauri::State<'_, AppState>,
-    app: tauri::AppHandle,
+    custom_path: Option<String>
 ) -> Result<String, String> {
     let device_ip = state.gateway.lock().unwrap().clone();
 
     // 1. Get the path where your DLLs and ADB are bundled
-    let resource_path = app
-        .path()
-        .resource_dir()
-        .map_err(|e| e.to_string())?
-        .join("binaries/scrcpy");
+    println!("Custom path received in Rust: {:?}", custom_path);
+    let scrcpy_path = state.scrcpy_path.lock().unwrap().clone().unwrap_or_else(|| get_binary_path("scrcpy", custom_path));
 
-    println!("Looking for sidecar files in: {:?}", resource_path);
+    // println!("Looking for sidecar files in: {:?}", resource_path);
 
-    let (mut rx, _child) = app
-        .shell()
-        .sidecar("binaries/scrcpy/scrcpy")
-        .map_err(|e| e.to_string())?
-        // 3. CRITICAL: Tell scrcpy where to find its DLLs and scrcpy-server
-        .env(
-            "SCRCPY_SERVER_PATH",
-            resource_path.join("scrcpy-server").to_str().unwrap(),
-        )
-        .args(["-s", &device_ip, "--always-on-top"])
-        .spawn()
-        .map_err(|e| format!("Failed to launch scrcpy: {}", e))?;
-
+    let status = Command::new(&scrcpy_path)
+        .status()
+        .expect("Failed to check scrcpy version");
     // 4. Monitor the output (Crucial for debugging why it closes)
-    tauri::async_runtime::spawn(async move {
-        while let Some(event) = rx.recv().await {
-            if let tauri_plugin_shell::process::CommandEvent::Stderr(line) = event {
-                println!("SCRCPY LOG: {}", String::from_utf8_lossy(&line));
-            }
-        }
-    });
 
-    Ok("Mirroring started".to_string())
+    if status.success() {
+        println!("scrcpy is available at: {}", scrcpy_path);
+        return Ok(format!("Started scrcpy with device IP: {}", device_ip));
+    } else {
+        return Err("Failed to start scrcpy".to_string());
+    }
 }

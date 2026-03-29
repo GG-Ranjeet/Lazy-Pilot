@@ -4,8 +4,6 @@
 // adb tcpip 5555
 // adb connect <IP_ADDRESS>:5555
 
-
-
 fn main() {
   app_lib::run();
 }
