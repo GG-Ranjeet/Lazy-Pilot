@@ -12,6 +12,13 @@ function App() {
     binary_path: "D:\\project\\tauri\\myTauriApp\\scrcpy",
     gateway: null as string | null,
   });
+  const [mirrorConfig, setMirrorConfig] = useState({
+    alwaysOnTop: true,
+    audioForwarding: false,
+    videoEnabled: true,
+    showWindow: true,
+    screenOn: false,
+  });
   return (
     <div className="flex h-screen flex-col">
       <div className="flex flex-col" id="header">
@@ -31,7 +38,7 @@ function App() {
         </div>
         <div className="flex flex-col justify-around items-center flex-1">
           <PinPad />
-          <MirrorOptions state={{ config, setConfig }} />
+          <MirrorOptions state={{ config, setConfig, mirrorConfig, setMirrorConfig }} />
         </div>
       </div>
     </div>

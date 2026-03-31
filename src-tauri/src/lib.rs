@@ -11,6 +11,7 @@ pub fn run() {
             gateway: Mutex::new("192.168.1.1".to_string()),
             adb_path: Mutex::new(None),
             scrcpy_path: Mutex::new(None),
+            device_name: Mutex::new(None),
         })
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())

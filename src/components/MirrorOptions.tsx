@@ -1,29 +1,39 @@
 import Toggle from "./Utils/Toggle";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 export default function MirrorOptions({state}:any) {
-  const [mirrorConfig, setMirrorConfig] = useState({
-    alwaysOnTop: true,
-    audioForwarding: false,
-    videoEnabled: true,
-    showWindow: true,
-  });
+  
+  function getMirrorArgs() {
+    const args = [];
+    if (state.mirrorConfig.screenOn) args.push("--turn-screen-on");
+    if (state.mirrorConfig.alwaysOnTop) args.push("--always-on-top");
+    if (state.mirrorConfig.audioForwarding) args.push("--audio-forwarding");
+    if (!state.mirrorConfig.videoEnabled) args.push("--no-video");
+    if (!state.mirrorConfig.showWindow) args.push("--no-display");
+    return args;
+  }
+
   async function startMirror() {
+    const args = getMirrorArgs();
     console.log(
       "Starting mirror with gateway:",
       state.config.gateway,
       "and binary path:",
       `${state.config.binary_path}//scrcpy.exe`,
+      "and args:",
+      args
     );
+
     const message: string = await invoke("start_mirror", {
       customPath: `${state.config.binary_path}//scrcpy.exe`,
+      args,
     });
     console.log("Mirror Started, Output:", message);
   }
   useEffect(() => {
-    console.log("Mirror Config Updated:", mirrorConfig);
-  });
+    console.log("Mirror Config Updated:", state.mirrorConfig);
+  }, [state.mirrorConfig]);
   return (
     <div className="mirror-options flex flex-col items-center justify-center gap-4 p-4">
       <div>
@@ -32,9 +42,21 @@ export default function MirrorOptions({state}:any) {
             <label className="label flex items-center gap-3 cursor-pointer">
               <Toggle
                 mark={true}
-                default_check={mirrorConfig.alwaysOnTop}
+                default_check={state.mirrorConfig.screenOn}
                 handler={(checked) =>
-                  setMirrorConfig({ ...mirrorConfig, alwaysOnTop: checked })
+                  state.setMirrorConfig({ ...state.mirrorConfig, screenOn: checked })
+                }
+              />
+              <span className="label-text">Screen On</span>
+            </label>
+          </div>
+          <div className="">
+            <label className="label flex items-center gap-3 cursor-pointer">
+              <Toggle
+                mark={true}
+                default_check={state.mirrorConfig.alwaysOnTop}
+                handler={(checked) =>
+                  state.setMirrorConfig({ ...state.mirrorConfig, alwaysOnTop: checked })
                 }
               />
               <span className="label-text">Always on top</span>
@@ -44,9 +66,9 @@ export default function MirrorOptions({state}:any) {
             <label className="label flex items-center gap-3 cursor-pointer">
               <Toggle
                 mark={true}
-                default_check={mirrorConfig.audioForwarding}
+                default_check={state.mirrorConfig.audioForwarding}
                 handler={(checked) =>
-                  setMirrorConfig({ ...mirrorConfig, audioForwarding: checked })
+                  state.setMirrorConfig({ ...state.mirrorConfig, audioForwarding: checked })
                 }
               />
               <span className="label-text">Audio Forwarding</span>
@@ -56,9 +78,9 @@ export default function MirrorOptions({state}:any) {
             <label className="label flex items-center gap-3 cursor-pointer">
               <Toggle
                 mark={true}
-                default_check={mirrorConfig.videoEnabled}
+                default_check={state.mirrorConfig.videoEnabled}
                 handler={(checked) =>
-                  setMirrorConfig({ ...mirrorConfig, videoEnabled: checked })
+                  state.setMirrorConfig({ ...state.mirrorConfig, videoEnabled: checked })
                 }
               />
               <span className="label-text">Video</span>
@@ -68,9 +90,9 @@ export default function MirrorOptions({state}:any) {
             <label className="label flex items-center gap-3 cursor-pointer">
               <Toggle
                 mark={true}
-                default_check={mirrorConfig.showWindow}
+                default_check={state.mirrorConfig.showWindow}
                 handler={(checked) =>
-                  setMirrorConfig({ ...mirrorConfig, showWindow: checked })
+                  state.setMirrorConfig({ ...state.mirrorConfig, showWindow: checked })
                 }
               />
               <span className="label-text">window</span>

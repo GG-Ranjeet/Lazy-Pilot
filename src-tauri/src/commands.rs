@@ -5,6 +5,7 @@ pub struct AppState {
     pub gateway: Mutex<String>,
     pub adb_path: Mutex<Option<String>>,
     pub scrcpy_path: Mutex<Option<String>>,
+    pub device_name: Mutex<Option<String>>,
 }
 
 fn get_binary_path(binary_name: &str, custom_path: Option<String>) -> String {
@@ -16,10 +17,7 @@ fn get_binary_path(binary_name: &str, custom_path: Option<String>) -> String {
 }
 
 #[tauri::command]
-pub fn set_binary_path(
-    state: tauri::State<'_, AppState>,
-    path: String,
-) -> Result<(), String> {
+pub fn set_binary_path(state: tauri::State<'_, AppState>, path: String) -> Result<(), String> {
     // Check if the provided path has adb and scrcpy
     let adb_path = std::path::PathBuf::from(&path).join("adb.exe");
     let scrcpy_path = std::path::PathBuf::from(&path).join("scrcpy.exe");
@@ -32,7 +30,6 @@ pub fn set_binary_path(
         ));
     }
 
-  
     let mut adb = state.adb_path.lock().unwrap();
     *adb = Some(adb_path.to_str().unwrap().to_string()); // Store the adb path for later use
 
@@ -69,8 +66,16 @@ pub fn get_and_set_gateway(state: tauri::State<'_, AppState>) -> Result<String, 
 }
 
 #[tauri::command]
-pub fn get_devices(state: tauri::State<'_, AppState>, custom_path: Option<String>) -> Result<String, String> {
-    let adb_path = state.adb_path.lock().unwrap().clone().unwrap_or_else(|| get_binary_path("adb", custom_path));
+pub fn get_devices(
+    state: tauri::State<'_, AppState>,
+    custom_path: Option<String>,
+) -> Result<String, String> {
+    let adb_path = state
+        .adb_path
+        .lock()
+        .unwrap()
+        .clone()
+        .unwrap_or_else(|| get_binary_path("adb", custom_path));
     let output = Command::new(&adb_path)
         .args(["devices"])
         .output()
@@ -86,8 +91,16 @@ pub fn get_devices(state: tauri::State<'_, AppState>, custom_path: Option<String
 }
 
 #[tauri::command]
-pub fn set_port(state: tauri::State<'_, AppState>, custom_path: Option<String>) -> Result<String, String> {
-    let adb_path = state.adb_path.lock().unwrap().clone().unwrap_or_else(|| get_binary_path("adb", custom_path));
+pub fn set_port(
+    state: tauri::State<'_, AppState>,
+    custom_path: Option<String>,
+) -> Result<String, String> {
+    let adb_path = state
+        .adb_path
+        .lock()
+        .unwrap()
+        .clone()
+        .unwrap_or_else(|| get_binary_path("adb", custom_path));
     let output = Command::new(&adb_path)
         .args(["tcpip", "5555"])
         .output()
@@ -103,10 +116,18 @@ pub fn set_port(state: tauri::State<'_, AppState>, custom_path: Option<String>) 
 }
 
 #[tauri::command]
-pub fn connect_adb(state: tauri::State<'_, AppState>, custom_path: Option<String>) -> Result<String, String> {
+pub fn connect_adb(
+    state: tauri::State<'_, AppState>,
+    custom_path: Option<String>,
+) -> Result<String, String> {
     let gateway = state.gateway.lock().unwrap();
     let device_address = format!("{}:5555", *gateway);
-    let adb_path = state.adb_path.lock().unwrap().clone().unwrap_or_else(|| get_binary_path("adb", custom_path));
+    let adb_path = state
+        .adb_path
+        .lock()
+        .unwrap()
+        .clone()
+        .unwrap_or_else(|| get_binary_path("adb", custom_path));
 
     let output = Command::new(&adb_path)
         .args(["connect", &device_address])
@@ -193,25 +214,89 @@ pub fn enter_pin(state: tauri::State<'_, AppState>, pin: String) -> String {
 #[tauri::command]
 pub async fn start_mirror(
     state: tauri::State<'_, AppState>,
-    custom_path: Option<String>
+    custom_path: Option<String>,
+    args: Option<Vec<String>>,
 ) -> Result<String, String> {
+    
     let device_ip = state.gateway.lock().unwrap().clone();
 
-    // 1. Get the path where your DLLs and ADB are bundled
-    println!("Custom path received in Rust: {:?}", custom_path);
-    let scrcpy_path = state.scrcpy_path.lock().unwrap().clone().unwrap_or_else(|| get_binary_path("scrcpy", custom_path));
-
-    // println!("Looking for sidecar files in: {:?}", resource_path);
-
-    let status = Command::new(&scrcpy_path)
-        .status()
-        .expect("Failed to check scrcpy version");
-    // 4. Monitor the output (Crucial for debugging why it closes)
-
-    if status.success() {
-        println!("scrcpy is available at: {}", scrcpy_path);
+    let is_running = state.device_name.lock().unwrap().is_some();
+    if is_running {
+        println!("Session already running... focusing the window");
+        focus_the_window();
         return Ok(format!("Started scrcpy with device IP: {}", device_ip));
+    } 
+    println!("No existing session, starting a new one...");
+
+    {        
+        let device_name = get_device_name();
+        *state.device_name.lock().unwrap() = Some(device_name.clone());
+    }
+
+    // println!("Custom path received in Rust: {:?}", custom_path);
+    let scrcpy_path = state
+        .scrcpy_path
+        .lock()
+        .unwrap()
+        .clone()
+        .unwrap_or_else(|| get_binary_path("scrcpy", custom_path));
+    
+    let output: Result<std::process::ExitStatus, std::io::Error> = Command::new(&scrcpy_path)
+        .args(args.unwrap_or_default())
+        .creation_flags(0x08000000)
+        .status();
+
+    {
+        let mut name_lock = state.device_name.lock().unwrap();
+        *name_lock = None;
+        println!("Scrcpy window closed. State cleared.");
+    }
+
+    match output {
+        Ok(status) if status.success() => {
+            Ok(format!("Scrcpy finished successfully for IP: {}", device_ip))
+        },
+        _ => Err("Scrcpy closed with an error or was interrupted".to_string()),
+    }
+}
+
+fn get_device_name() -> String {
+    let script = "adb shell getprop ro.product.model";
+    let model_output = Command::new("powershell")
+        .args(["-command", script])
+        .creation_flags(0x08000000)
+        .output()
+        .expect("Failed to execute command");
+
+    if model_output.status.success() {
+        let stdout = String::from_utf8_lossy(&model_output.stdout)
+            .trim()
+            .to_string();
+        let model_name: String = stdout.lines().collect::<Vec<&str>>()[0].to_string();
+        return model_name;
     } else {
-        return Err("Failed to start scrcpy".to_string());
+        let stderr = String::from_utf8_lossy(&model_output.stderr)
+            .trim()
+            .to_string();
+        return stderr;
+    }
+}
+
+fn focus_the_window() {
+    let script = format!(
+        "(New-Object -ComObject WScript.Shell).AppActivate((adb shell getprop ro.product.model).Trim())",
+    );
+
+    let output = Command::new("powershell")
+        .args(["-command", &script])
+        .creation_flags(0x08000000)
+        .output()
+        .expect("Failed to execute command");
+
+    if output.status.success() {
+        println!("Window focused successfully");
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+        println!("Error focusing window: {}", stderr);
     }
 }
