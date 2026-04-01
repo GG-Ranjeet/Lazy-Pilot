@@ -32,7 +32,7 @@ function App() {
         </div>
 
         {/* middle */}
-        <div className="w-1/4 flex justify-center gap-2 align-center flex-col">
+        <div className="w-1/3 flex justify-center gap-2 align-center flex-col">
           <div className="flex-auto border-2 border-white ">
             <UtilButton />
           </div>

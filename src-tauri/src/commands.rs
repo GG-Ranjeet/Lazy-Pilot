@@ -1,23 +1,13 @@
+use std::os::windows::process::CommandExt;
 use std::process::Command;
-use std::{os::windows::process::CommandExt, sync::Mutex};
-
-pub struct AppState {
-    pub gateway: Mutex<String>,
-    pub adb_path: Mutex<Option<String>>,
-    pub scrcpy_path: Mutex<Option<String>>,
-    pub device_name: Mutex<Option<String>>,
-}
-
-fn get_binary_path(binary_name: &str, custom_path: Option<String>) -> String {
-    if let Some(path) = custom_path {
-        path
-    } else {
-        binary_name.to_string() // Assumes it's in PATH
-    }
-}
+use crate::utils::AppState;
+use crate::utils::get_binary_path;
 
 #[tauri::command]
-pub fn set_binary_path(state: tauri::State<'_, AppState>, path: String) -> Result<(), String> {
+pub fn set_binary_path(
+    state: tauri::State<'_, crate::utils::AppState>,
+    path: String,
+) -> Result<(), String> {
     // Check if the provided path has adb and scrcpy
     let adb_path = std::path::PathBuf::from(&path).join("adb.exe");
     let scrcpy_path = std::path::PathBuf::from(&path).join("scrcpy.exe");
@@ -217,7 +207,6 @@ pub async fn start_mirror(
     custom_path: Option<String>,
     args: Option<Vec<String>>,
 ) -> Result<String, String> {
-    
     let device_ip = state.gateway.lock().unwrap().clone();
 
     let is_running = state.device_name.lock().unwrap().is_some();
@@ -225,10 +214,10 @@ pub async fn start_mirror(
         println!("Session already running... focusing the window");
         focus_the_window();
         return Ok(format!("Started scrcpy with device IP: {}", device_ip));
-    } 
+    }
     println!("No existing session, starting a new one...");
 
-    {        
+    {
         let device_name = get_device_name();
         *state.device_name.lock().unwrap() = Some(device_name.clone());
     }
@@ -256,9 +245,10 @@ pub async fn start_mirror(
     }
 
     match output {
-        Ok(status) if status.success() => {
-            Ok(format!("Scrcpy finished successfully for IP: {}", device_ip))
-        },
+        Ok(status) if status.success() => Ok(format!(
+            "Scrcpy finished successfully for IP: {}",
+            device_ip
+        )),
         _ => Err("Scrcpy closed with an error or was interrupted".to_string()),
     }
 }
