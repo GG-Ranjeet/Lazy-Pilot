@@ -6,7 +6,7 @@ export default function MirrorOptions({state}:any) {
   
   function getMirrorArgs() {
     const args = [];
-    if (state.mirrorConfig.screenOn) args.push("--turn-screen-on");
+    if (!state.mirrorConfig.screenOn) args.push("--turn-screen-off");
     if (state.mirrorConfig.alwaysOnTop) args.push("--always-on-top");
     if (state.mirrorConfig.audioForwarding) args.push("--audio-forwarding");
     if (!state.mirrorConfig.videoEnabled) args.push("--no-video");

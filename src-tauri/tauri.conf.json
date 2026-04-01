@@ -14,14 +14,18 @@
       {
         "label": "main",
         "title": "mytauriapp",
-        "width": 1200,
+        "width": 1120,
         "minWidth": 800,
-        "height": 720,
+        "maxWidth": 1120,
+        "height": 780,
         "minHeight": 500,
-        "center": true,
+        "maxHeight": 780,
+        "center": false,
+        "x": 0,
+        "y": 0,
         "resizable": true,
         "fullscreen": false,
-        "transparent": false,
+        "transparent": true,
         "decorations": true
       }
     ],

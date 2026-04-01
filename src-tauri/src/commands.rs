@@ -240,9 +240,12 @@ pub async fn start_mirror(
         .unwrap()
         .clone()
         .unwrap_or_else(|| get_binary_path("scrcpy", custom_path));
-    
+    let mut newargs = args.unwrap_or_default();
+    newargs.push("--window-x=1515".to_string());
+    newargs.push("--window-y=50".to_string());
+
     let output: Result<std::process::ExitStatus, std::io::Error> = Command::new(&scrcpy_path)
-        .args(args.unwrap_or_default())
+        .args(newargs)
         .creation_flags(0x08000000)
         .status();
 

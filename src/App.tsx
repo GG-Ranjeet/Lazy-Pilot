@@ -20,23 +20,29 @@ function App() {
     screenOn: false,
   });
   return (
-    <div className="flex h-screen flex-col">
-      <div className="flex flex-col" id="header">
+    <div className="flex h-screen flex-col gap-2">
+      <div className="flex flex-col border-2 border-white" id="header">
         <Header />
       </div>
       <div className="flex flex-1 gap-2 overflow-hidden">
-        <div className="w-1/4">
+        
+        {/* left */}
+        <div className="w-1/4 border-2 border-white">
           <Browser />
         </div>
-        <div className="w-1/4 flex justify-center align-center flex-col">
-          <div className="flex-auto border-2 border-black bg-gray-50">
+
+        {/* middle */}
+        <div className="w-1/4 flex justify-center gap-2 align-center flex-col">
+          <div className="flex-auto border-2 border-white ">
             <UtilButton />
           </div>
-          <div className="flex-auto justify-center flex-col">
+          <div className="flex-auto justify-center flex-col border-2 border-white">
             <AdbControl state={{ config, setConfig }} />
           </div>
         </div>
-        <div className="flex flex-col justify-around items-center flex-1">
+
+        {/* right */}
+        <div className="flex flex-col justify-around items-center flex-1 border-2 border-white">
           <PinPad />
           <MirrorOptions state={{ config, setConfig, mirrorConfig, setMirrorConfig }} />
         </div>
