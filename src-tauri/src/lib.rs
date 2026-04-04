@@ -3,6 +3,7 @@ use std::sync::Mutex;
 mod commands;
 pub mod utils;
 use crate::utils::AppState;
+use tauri_plugin_log::{Target, TargetKind};
 mod more_commands {
     pub mod volume_commands;
     // pub mod DeviceCommand;
@@ -22,6 +23,12 @@ pub fn run() {
         })
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_log::Builder::new()
+            .targets([
+                Target::new(TargetKind::Stdout),    // Logs to terminal
+                Target::new(TargetKind::Webview),  // Forwards logs to the frontend
+            ])
+            .build())
         .invoke_handler(tauri::generate_handler![
             commands::get_devices,
             commands::set_port,

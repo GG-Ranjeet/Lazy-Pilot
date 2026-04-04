@@ -33,10 +33,10 @@ function UtilButton() {
   function setVolume(): void {
     console.log("called");
     const mobileVolume = volume;
-    console.log("Setting volume to:", mobileVolume*100/MAX_VOLUME, "%");
+    console.log("Setting volume to:", (mobileVolume * 100) / MAX_VOLUME, "%");
     try {
       if (volume !== null) {
-        invoke("set_volume", { level: (mobileVolume) });
+        invoke("set_volume", { level: mobileVolume });
       }
     } catch (error) {
       console.error("Error setting volume:", error);
@@ -44,18 +44,23 @@ function UtilButton() {
   }
 
   return (
-    <div className="flex flex-col p-5 justify-center align-center">
-      <div className="flex flex-row justify-between gap-4">
-        <div className="my-button flex items-center gap-2">
-          <button className="" onClick={() => goHome()}>
-            <House className="h-6 w-6"></House>
-          </button>
-        </div>
+    <div className="flex flex-col p-3 justify-center align-center">
+      <div className="flex flex-row justify-between gap-2">
         <div className="my-button flex items-center gap-2">
           <button className="" onClick={() => powerButton()}>
             <PowerIcon className="h-6 w-6"></PowerIcon>
           </button>
         </div>
+        <div className="my-button flex items-center gap-2">
+          <button className="" onClick={() => goHome()}>
+            <House className="h-6 w-6"></House>
+          </button>
+        </div>        
+        <div className="my-button flex items-center gap-2">
+          <button className="" onClick={() => goHome()}>
+            <House className="h-6 w-6"></House>
+          </button>
+        </div>        
         <div className="my-button flex items-center gap-2">
           <button className="" onClick={() => goBackButton()}>
             <Undo2 className="h-6 w-6" />
@@ -63,21 +68,37 @@ function UtilButton() {
         </div>
       </div>
 
-      <div>
-        <div className="my-button flex items-center gap-2" onClick={() => decreaseVolume()}>
-          <Volume1 className="h-6 w-6"></Volume1>
-            Volume-
-        </div>
-        <div className="my-button flex items-center gap-2" onClick={() => increaseVolume()}>
-          <Volume2 className="h-6 w-6"></Volume2>
-            Volume+
-        </div>
-
-        <div>          
-          <Slider value={volume} onChange={setVolumeLevel} stepCount={MAX_VOLUME} showStep={true} />
-          <div className="my-button flex items-center gap-2" onClick={() => setVolume()}>
-            <Volume2 className="h-6 w-6"></Volume2>
+      <div className="">
+        <div>
+          <Slider
+            value={volume}
+            onChange={setVolumeLevel}
+            stepCount={MAX_VOLUME}
+            showStep={true}
+          /> 
+          <div className="flex flex-row justify-between">
+            <div
+              className="my-button flex items-center gap-2"
+              onClick={() => setVolume()}
+            >
+              <Volume2 className="h-6 w-6"></Volume2>
               Set Volume
+            </div>
+            
+          <div className="flex flex-row justify-between gap-2">
+            <div
+              className="my-button flex items-center gap-2"
+              onClick={() => decreaseVolume()}
+            >
+              <Volume1 className="h-6 w-6"></Volume1>
+            </div>
+            <div
+              className="my-button flex items-center gap-2"
+              onClick={() => increaseVolume()}
+            >
+              <Volume2 className="h-6 w-6"></Volume2>
+            </div>
+          </div>
           </div>
         </div>
       </div>
