@@ -5,6 +5,7 @@ pub struct AppState {
     pub adb_path: Mutex<Option<String>>,
     pub scrcpy_path: Mutex<Option<String>>,
     pub device_name: Mutex<Option<String>>,
+    pub screen_on: Mutex<bool>,
 }
 
 pub fn get_binary_path(binary_name: &str, custom_path: Option<String>) -> String {

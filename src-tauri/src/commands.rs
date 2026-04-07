@@ -176,10 +176,55 @@ pub fn press_power_button(state: tauri::State<'_, AppState>) -> Result<String, S
     if output.status.success() {
         Ok("Success: Power button pressed".to_string())
     } else {
-        // This captures the ACTUAL error from ADB (e.g., "device not found")
         let error_msg = String::from_utf8_lossy(&output.stderr);
         Err(format!("ADB Error: {}", error_msg.trim()))
     }
+}
+
+fn run_adb_shell(state: &tauri::State<'_, AppState>, shell_cmd: &[&str]) -> Result<String, String> {
+    let gateway = state.gateway.lock().unwrap();
+    let device_address = format!("{}:5555", *gateway);
+
+    let mut args = vec!["-s", &device_address, "shell"];
+    args.extend_from_slice(shell_cmd);
+
+    let output = std::process::Command::new("adb")
+        .args(&args)
+        .output()
+        .map_err(|e| format!("Failed to execute adb: {}", e))?;
+
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+    }
+}
+
+#[tauri::command]
+pub fn toggle_device_screen(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let mut screen_on = state.screen_on.lock().unwrap();
+
+    if *screen_on {
+        run_adb_shell(&state, &["input", "keyevent", "223"])?;
+        *screen_on = false;
+        Ok("Screen turned off".to_string())
+    } else {
+        run_adb_shell(&state, &["input", "keyevent", "224"])?;
+        *screen_on = true;
+        Ok("Screen turned on".to_string())
+    }
+}
+
+#[tauri::command]
+pub fn get_screen_state(state: tauri::State<'_, AppState>) -> Result<bool, String> {
+    let screen_on = state.screen_on.lock().unwrap();
+    Ok(*screen_on)
+}
+
+#[tauri::command]
+pub fn press_back_button(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    run_adb_shell(&state, &["input", "keyevent", "4"])?;
+    Ok("Success: Back button pressed".to_string())
 }
 
 #[tauri::command]

@@ -20,6 +20,7 @@ pub fn run() {
             adb_path: Mutex::new(None),
             scrcpy_path: Mutex::new(None),
             device_name: Mutex::new(None),
+            screen_on: Mutex::new(true),
         })
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
@@ -41,6 +42,9 @@ pub fn run() {
             more_commands::volume_commands::decrease_volume,
             commands::press_home_button,
             commands::press_power_button,
+            commands::press_back_button,
+            commands::toggle_device_screen,
+            commands::get_screen_state,
             commands::enter_pin,
 
         ])

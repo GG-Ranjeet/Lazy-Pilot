@@ -12,20 +12,20 @@ export default function Slider({
   stepCount = 1,
 }: SliderProps) {
   return (
-    <div className="w-full max-w-xs">
+    <div className="w-full">
       <input
         type="range"
         min={0}
         max={stepCount}
         value={value}
-        className="range"
+        className="range-slider"
         step={1}
         onChange={(e) => onChange(parseInt(e.target.value))}
       />
       {showStep && (
-        <div className="flex justify-between px-2.5 mt-2 mb-2 text-xs">
+        <div className="flex justify-between px-1 mt-1 text-[10px] text-[var(--text-muted)]">
           {Array.from({ length: stepCount + 1 }).map((_, i) => (
-            <span key={i}>|</span>
+            <span key={i}>{i}</span>
           ))}
         </div>
       )}

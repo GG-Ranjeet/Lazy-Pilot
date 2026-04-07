@@ -1,39 +1,52 @@
 import { invoke } from "@tauri-apps/api/core";
-import { House, PowerIcon, Undo2, Volume1, Volume2 } from "lucide-react";
+import {
+  House,
+  PowerIcon,
+  Undo2,
+  Volume1,
+  Volume2,
+  MonitorOff,
+  Monitor,
+} from "lucide-react";
 import { useState } from "react";
 import Slider from "./Utils/Slider";
 
 function UtilButton() {
   const MAX_VOLUME = 5;
   const [volume, setVolumeLevel] = useState(0);
+  const [screenOn, setScreenOn] = useState(true);
+
   function goHome() {
-    console.log("Going home...");
     invoke("press_home_button");
   }
+
   function powerButton() {
-    console.log("Pressing power button...");
     invoke("press_power_button");
   }
 
   function increaseVolume(): void {
-    console.log("Increasing volume...");
     invoke("increase_volume");
   }
 
   function decreaseVolume(): void {
-    console.log("Decreasing volume...");
     invoke("decrease_volume");
   }
 
   function goBackButton(): void {
-    console.log("Going back...");
     invoke("press_back_button");
   }
 
+  async function toggleScreen(): Promise<void> {
+    try {
+      await invoke<string>("toggle_device_screen");
+      setScreenOn((prev) => !prev);
+    } catch (error) {
+      console.error("Error toggling screen:", error);
+    }
+  }
+
   function setVolume(): void {
-    console.log("called");
     const mobileVolume = volume;
-    console.log("Setting volume to:", (mobileVolume * 100) / MAX_VOLUME, "%");
     try {
       if (volume !== null) {
         invoke("set_volume", { level: mobileVolume });
@@ -44,62 +57,43 @@ function UtilButton() {
   }
 
   return (
-    <div className="flex flex-col p-3 justify-center align-center">
-      <div className="flex flex-row justify-between gap-2">
-        <div className="my-button flex items-center gap-2">
-          <button className="" onClick={() => powerButton()}>
-            <PowerIcon className="h-6 w-6"></PowerIcon>
-          </button>
-        </div>
-        <div className="my-button flex items-center gap-2">
-          <button className="" onClick={() => goHome()}>
-            <House className="h-6 w-6"></House>
-          </button>
-        </div>        
-        <div className="my-button flex items-center gap-2">
-          <button className="" onClick={() => goHome()}>
-            <House className="h-6 w-6"></House>
-          </button>
-        </div>        
-        <div className="my-button flex items-center gap-2">
-          <button className="" onClick={() => goBackButton()}>
-            <Undo2 className="h-6 w-6" />
-          </button>
-        </div>
+    <div className="section">
+      <div className="section-row">
+        <button className="btn btn-icon" onClick={powerButton} title="Power">
+          <PowerIcon size={18} />
+        </button>
+        <button className="btn btn-icon" onClick={goHome} title="Home">
+          <House size={18} />
+        </button>
+        <button className="btn btn-icon" onClick={goBackButton} title="Back">
+          <Undo2 size={18} />
+        </button>
+        <button className="btn btn-icon" onClick={toggleScreen} title="Toggle Screen">
+          {screenOn ? <MonitorOff size={18} /> : <Monitor size={18} />}
+        </button>
       </div>
 
-      <div className="">
-        <div>
+      <div className="section">
+        <div className="flex items-center gap-2">
+          <Volume1 size={14} className="text-[var(--text-muted)]" />
           <Slider
             value={volume}
             onChange={setVolumeLevel}
             stepCount={MAX_VOLUME}
-            showStep={true}
-          /> 
-          <div className="flex flex-row justify-between">
-            <div
-              className="my-button flex items-center gap-2"
-              onClick={() => setVolume()}
-            >
-              <Volume2 className="h-6 w-6"></Volume2>
-              Set Volume
-            </div>
-            
-          <div className="flex flex-row justify-between gap-2">
-            <div
-              className="my-button flex items-center gap-2"
-              onClick={() => decreaseVolume()}
-            >
-              <Volume1 className="h-6 w-6"></Volume1>
-            </div>
-            <div
-              className="my-button flex items-center gap-2"
-              onClick={() => increaseVolume()}
-            >
-              <Volume2 className="h-6 w-6"></Volume2>
-            </div>
-          </div>
-          </div>
+            showStep={false}
+          />
+          <Volume2 size={14} className="text-[var(--text-muted)]" />
+        </div>
+        <div className="flex gap-2">
+          <button className="btn btn-primary" style={{ flex: 1 }} onClick={setVolume}>
+            Set Volume
+          </button>
+          <button className="btn" onClick={decreaseVolume}>
+            <Volume1 size={14} />
+          </button>
+          <button className="btn" onClick={increaseVolume}>
+            <Volume2 size={14} />
+          </button>
         </div>
       </div>
     </div>
