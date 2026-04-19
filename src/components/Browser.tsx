@@ -36,11 +36,11 @@ export default function Browser() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
+        <div className="flex items-center gap-2 p-3! rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
           {deviceInfo.connected ? <Wifi size={16} className="text-[var(--success)]" /> : <WifiOff size={16} className="text-[var(--text-muted)]" />}
           <span className="text-xs text-[var(--text-secondary)]">ADB</span>
         </div>
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
+        <div className="flex items-center gap-2 p-3! rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-color)]">
           <Battery size={16} className="text-[var(--text-muted)]" />
           <span className="text-xs text-[var(--text-secondary)]">{deviceInfo.battery}</span>
         </div>

@@ -84,7 +84,7 @@ function UtilButton() {
           />
           <Volume2 size={14} className="text-[var(--text-muted)]" />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-3">
           <button className="btn btn-primary" style={{ flex: 1 }} onClick={setVolume}>
             Set Volume
           </button>

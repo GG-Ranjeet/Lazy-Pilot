@@ -110,7 +110,7 @@ function App() {
             <div
               key={panel.id}
               className={`card draggable-panel ${draggedId === panel.id ? "dragging" : ""} ${dragOverId === panel.id ? "ring-2 ring-[var(--accent)]" : ""}`}
-              style={{ padding: "10px", overflow: "hidden" }}
+              style={{ padding: "12px", overflow: "auto" }}
               draggable
               onDragStart={() => handleDragStart(panel.id)}
               onDragOver={(e) => handleDragOver(e, panel.id)}
